@@ -77,4 +77,8 @@ function Navbar({ onLoginClick }) {
   );
 }
 
+<Link to="/email-campaign" className="nav-link">
+  <i className="fas fa-envelope"></i> Email Campaign
+</Link>
+
 export default Navbar;
