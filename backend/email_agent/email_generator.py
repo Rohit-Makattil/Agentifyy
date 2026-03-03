@@ -52,8 +52,8 @@ def generate_complete_email(subject: str, mail_description: str, receiver_name: 
     """
     
     try:
-        # Use Gemini 1.5 Flash model
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use Gemini 2.5 Flash model
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         generation_config = {
             "temperature": 0.7,

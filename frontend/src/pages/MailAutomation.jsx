@@ -1,51 +1,69 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal';
+import { useOutletContext, Link } from 'react-router-dom';
 import axios from 'axios';
 
-function MailAutomation() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  
+function MailAutomation({ initialData }) {
+  const context = useOutletContext();
+  const { isLoggedIn, setIsLoginModalOpen } = context || {};
+
   // Form states
   const [subject, setSubject] = useState('');
   const [mailDescription, setMailDescription] = useState('');
   const [senderName, setSenderName] = useState('Agentify Team');
-  
+
   // Generated email state
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [previewHtml, setPreviewHtml] = useState('');
-  
+
   // Send mode & states
-  const [sendMode, setSendMode] = useState(null); // null, 'single', or 'csv'
+  const [sendMode, setSendMode] = useState(null); // null, 'single', 'csv', or 'audience'
   const [receiverName, setReceiverName] = useState(''); // For single email
   const [receiverEmail, setReceiverEmail] = useState(''); // For single email
   const [csvFile, setCsvFile] = useState(null);
   const [emails, setEmails] = useState(null);
-  const [emailId, setEmailId] = useState(null);
+  const [cacheId, setCacheId] = useState(null); // maps to backend cache_id
   const [scheduledDateTime, setScheduledDateTime] = useState('');
-  
+
+  // Audience Group states
+  const [audienceGroup, setAudienceGroup] = useState('');
+  const [isLoadingAudience, setIsLoadingAudience] = useState(false);
+  const [availableAudienceGroups] = useState([
+    { key: 'restaurant_chains', label: 'Restaurant Chains' },
+    { key: 'clothing_brands', label: 'Clothing Brands' },
+    { key: 'tech_startups', label: 'Tech Startups' },
+    { key: 'salons_spas', label: 'Salons & Spas' },
+    { key: 'real_estate_agencies', label: 'Real Estate Agencies' },
+  ]);
+
   // UI states
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [sendResult, setSendResult] = useState(null);
+  const [includeResponseButtons, setIncludeResponseButtons] = useState(false);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-    if (!loggedIn) {
+    if (initialData) {
+      if (initialData.subject) setSubject(initialData.subject);
+      if (initialData.mailDescription) setMailDescription(initialData.mailDescription);
+      if (initialData.generatedEmail) {
+        setGeneratedEmail(initialData.generatedEmail);
+        setPreviewHtml(initialData.previewHtml);
+        setShowPreview(true);
+      }
+      return;
+    }
+
+    if (!isLoggedIn && setIsLoginModalOpen) {
       setIsLoginModalOpen(true);
     }
-  }, []);
+  }, [initialData, isLoggedIn, setIsLoginModalOpen]);
 
   // STEP 1: Generate Email
   const handleGenerateEmail = async (e) => {
     e.preventDefault();
-    
+
     if (!subject || !mailDescription) {
       showNotification('Please fill in subject and mail description', 'error');
       return;
@@ -55,14 +73,14 @@ function MailAutomation() {
     try {
       const response = await axios.post('http://localhost:5000/email/generate', {
         subject,
-        mailDescription,
-        receiverName: receiverName || 'Recipient',
-        senderName: senderName || 'Agentify Team'
+        mail_description: mailDescription,
+        receiver_name: receiverName || 'Recipient',
+        sender_name: senderName || 'Agentify Team'
       });
 
       if (response.data.success) {
-        setGeneratedEmail(response.data.emailBody);
-        setPreviewHtml(response.data.previewHtml);
+        setGeneratedEmail(response.data.email_body);
+        setPreviewHtml(response.data.preview_html);
         setShowPreview(true);
         showNotification('✅ Email generated successfully!', 'success');
       }
@@ -91,9 +109,10 @@ function MailAutomation() {
       const response = await axios.post('http://localhost:5000/email/send', {
         subject,
         body: generatedEmail,
-        recipients: [receiverEmail],
-        scheduledTime: scheduledDateTime || null,
-        senderName: senderName || 'Agentify Team'
+        to_emails: [receiverEmail],
+        scheduled_time: scheduledDateTime || null,
+        sender_name: senderName || 'Agentify Team',
+        include_response_buttons: includeResponseButtons
       });
 
       if (response.data.success) {
@@ -136,9 +155,9 @@ function MailAutomation() {
 
     try {
       setUploadProgress(50);
-      
+
       const response = await axios.post(
-        'http://localhost:5000/upload-email-csv', 
+        'http://localhost:5000/upload-email-csv',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -146,7 +165,7 @@ function MailAutomation() {
       setUploadProgress(100);
 
       if (response.data.success) {
-        setEmailId(response.data.email_id);
+        setCacheId(response.data.cache_id);
         setEmails(response.data);
         showNotification(`✅ Found ${response.data.total_valid} emails with names`, 'success');
       } else {
@@ -160,10 +179,39 @@ function MailAutomation() {
     }
   };
 
-  // STEP 2B: Send to CSV emails
+  // STEP 2C: Load predefined audience group CSV
+  const handleAudienceGroupChange = async (groupKey) => {
+    setAudienceGroup(groupKey);
+    if (!groupKey) {
+      setEmails(null);
+      setCacheId(null);
+      return;
+    }
+
+    setIsLoadingAudience(true);
+    setEmails(null);
+    setCacheId(null);
+    try {
+      const response = await axios.post(`http://localhost:5000/load-audience-csv/${groupKey}`);
+      if (response.data.success) {
+        setCacheId(response.data.cache_id);
+        setEmails(response.data);
+        showNotification(`✅ Loaded ${response.data.total_valid} contacts for this group`, 'success');
+      } else {
+        showNotification('❌ Failed to load audience group', 'error');
+      }
+    } catch (error) {
+      showNotification('❌ Error loading audience group', 'error');
+      console.error(error);
+    } finally {
+      setIsLoadingAudience(false);
+    }
+  };
+
+  // STEP 2B / 2C: Send to CSV or Audience Group emails (shared logic)
   const handleSendCSV = async () => {
-    if (!emailId || !generatedEmail) {
-      showNotification('Please upload CSV and generate email', 'error');
+    if (!cacheId || !generatedEmail) {
+      showNotification('Please load recipients and generate email first', 'error');
       return;
     }
 
@@ -172,19 +220,19 @@ function MailAutomation() {
     setIsSending(true);
 
     try {
-      const formData = new FormData();
-      formData.append('email_id', emailId);
-      formData.append('subject', subject);
-      formData.append('body', generatedEmail);
-      
-      // Add scheduled time if provided
+      const payload = {
+        cache_id: cacheId,
+        subject: subject,
+        body: generatedEmail,
+        include_response_buttons: includeResponseButtons
+      };
       if (scheduledDateTime) {
-        formData.append('scheduledTime', scheduledDateTime);
+        payload.scheduled_time = scheduledDateTime;
       }
 
       const response = await axios.post(
-        'http://localhost:5000/send-bulk-email', 
-        formData
+        'http://localhost:5000/send-bulk-email',
+        payload
       );
 
       if (response.data.success) {
@@ -207,23 +255,29 @@ function MailAutomation() {
   };
 
   const showNotification = (message, type = 'info') => {
+    // Count existing toasts to stack them vertically
+    const existing = document.querySelectorAll('.notification:not(.fade-out)');
+    const stackIndex = existing.length; // 0 = top slot
+
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    notification.style.top = `calc(1.5rem + ${stackIndex * 70}px)`;
     notification.textContent = message;
     document.body.appendChild(notification);
-    
+
+    const dismissMs = 3500;
     setTimeout(() => {
       notification.classList.add('fade-out');
       notification.addEventListener('transitionend', () => {
         notification.remove();
-      });
-    }, 3000);
+      }, { once: true });
+    }, dismissMs);
   };
 
   const resetForm = () => {
     setSendResult(null);
     setEmails(null);
-    setEmailId(null);
+    setCacheId(null);
     setSubject('');
     setMailDescription('');
     setCsvFile(null);
@@ -234,6 +288,8 @@ function MailAutomation() {
     setReceiverEmail('');
     setReceiverName('');
     setSendMode(null);
+    setAudienceGroup('');
+    setIncludeResponseButtons(false);
   };
 
   const emailExamples = [
@@ -244,27 +300,48 @@ function MailAutomation() {
 
   return (
     <>
-      <Navbar onLoginClick={() => setIsLoginModalOpen(true)} />
-      
-      <section className={`agent-hero mail-automation-hero ${!isLoggedIn ? 'blur' : ''}`}>
-        <div className="floating-shapes">
-          <div className="floating-shape"></div>
-          <div className="floating-shape"></div>
-          <div className="floating-shape"></div>
-        </div>
-        
-        <div className="hero-content">
-          <div className="hero-badge-animated">
-            <span className="badge-glow"></span>
-            <i className="fas fa-envelope"></i>
-            <span>AI-Powered Email Automation</span>
+
+      <section className={`modern-hero mail-hero ${!isLoggedIn ? 'blur' : ''}`}>
+        <div className="hero-grid">
+          <div className="hero-left">
+            <div className="hero-tag">
+              <i className="fas fa-envelope-open-text"></i>
+              <span>Email Automation</span>
+            </div>
+            <h1 className="hero-heading">
+              Automate Your
+              <span className="gradient-text"> Email Workflow</span>
+            </h1>
+            <p className="hero-description">
+              Generate professional emails with AI precision. Send to thousands with one click. Schedule for maximum impact.
+            </p>
+            <div className="hero-stats">
+              <div className="stat-item">
+                <div className="stat-number">10x</div>
+                <div className="stat-label">Faster</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">100%</div>
+                <div className="stat-label">AI-Powered</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">∞</div>
+                <div className="stat-label">Emails</div>
+              </div>
+            </div>
           </div>
-          <h1 className="hero-title-enhanced">
-            <span className="gradient-text-animated">Mail Automation</span>
-          </h1>
-          <p className="hero-subtitle-enhanced">
-            Generate professional emails with AI and send to single or bulk recipients with scheduling.
-          </p>
+          <div className="hero-right">
+            <div className="hero-visual">
+              <div className="visual-icon">
+                <i className="fas fa-robot"></i>
+              </div>
+              <div className="visual-rings">
+                <div className="ring ring-1"></div>
+                <div className="ring ring-2"></div>
+                <div className="ring ring-3"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -292,7 +369,7 @@ function MailAutomation() {
                   <p>Configure your email content</p>
                 </div>
               </div>
-              
+
               <form className="builder-form" onSubmit={handleGenerateEmail}>
                 <div className="form-group-enhanced">
                   <label className="label-enhanced">
@@ -322,7 +399,7 @@ function MailAutomation() {
                     required
                     rows="5"
                   ></textarea>
-                  
+
                   <div className="quick-templates">
                     <span className="templates-label">📝 Quick Examples:</span>
                     {emailExamples.map((example, index) => (
@@ -371,7 +448,7 @@ function MailAutomation() {
               {showPreview && (
                 <div className="send-config">
                   <div className="config-divider"></div>
-                  
+
                   <div className="panel-header-enhanced">
                     <div className="header-icon-wrapper">
                       <i className="fas fa-paper-plane"></i>
@@ -390,13 +467,14 @@ function MailAutomation() {
                       onClick={() => {
                         setSendMode('single');
                         setEmails(null);
-                        setEmailId(null);
+                        setCacheId(null);
                         setCsvFile(null);
+                        setAudienceGroup('');
                       }}
                     >
                       <i className="fas fa-envelope"></i> Single Email
                     </button>
-                    
+
                     <button
                       type="button"
                       className={`mode-btn ${sendMode === 'csv' ? 'active' : ''}`}
@@ -404,10 +482,66 @@ function MailAutomation() {
                         setSendMode('csv');
                         setReceiverEmail('');
                         setReceiverName('');
+                        setAudienceGroup('');
+                        setEmails(null);
+                        setCacheId(null);
                       }}
                     >
                       <i className="fas fa-upload"></i> Multiple Emails from Sheet
                     </button>
+
+                    <button
+                      type="button"
+                      className={`mode-btn ${sendMode === 'audience' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSendMode('audience');
+                        setReceiverEmail('');
+                        setReceiverName('');
+                        setCsvFile(null);
+                        setEmails(null);
+                        setCacheId(null);
+                        setAudienceGroup('');
+                      }}
+                    >
+                      <i className="fas fa-users-cog"></i> Target Audience Group (From CSV)
+                    </button>
+
+                    <Link
+                      to="/lead-finder"
+                      className="mode-btn lead-flow-integration-btn"
+                      style={{
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: 'white',
+                        border: 'none'
+                      }}
+                    >
+                      <i className="fas fa-search-location"></i>
+                      <span>Find Leads with LeadFlow</span>
+                      <i className="fas fa-external-link-alt" style={{ fontSize: '0.7em', opacity: 0.8 }}></i>
+                    </Link>
+                  </div>
+
+                  {/* Response Tracking Toggle */}
+                  <div className="response-tracking-config">
+                    <label className="tracking-toggle">
+                      <input
+                        type="checkbox"
+                        checked={includeResponseButtons}
+                        onChange={(e) => setIncludeResponseButtons(e.target.checked)}
+                      />
+                      <div className="toggle-custom">
+                        <i className={`fas ${includeResponseButtons ? 'fa-check-circle' : 'fa-circle'}`}></i>
+                        <span>Include Yes/No Response Buttons (Track with Google Sheet)</span>
+                      </div>
+                    </label>
+                    <p className="tracking-info">
+                      If enabled, recipients will see "Yes, I'm Interested" and "Not Interested" buttons that track responses back to your centralized sheet.
+                    </p>
                   </div>
 
                   {/* Single Email Mode */}
@@ -461,9 +595,9 @@ function MailAutomation() {
                         )}
                       </div>
 
-                      <button 
-                        type="button" 
-                        className="send-btn-enhanced" 
+                      <button
+                        type="button"
+                        className="send-btn-enhanced"
                         onClick={handleSendManual}
                         disabled={isSending || !receiverEmail || !receiverName}
                       >
@@ -482,12 +616,129 @@ function MailAutomation() {
                     </div>
                   )}
 
+                  {/* Audience Group Mode */}
+                  {sendMode === 'audience' && (
+                    <div className="send-section csv-section">
+                      <h4 className="csv-section-title">🎯 Target Audience Group</h4>
+                      <p className="csv-section-info">Select a predefined audience group — the corresponding CSV will be loaded automatically.</p>
+
+                      <div className="form-group-enhanced">
+                        <label className="label-enhanced">
+                          <i className="fas fa-layer-group"></i>
+                          <span>Select Audience Group</span>
+                        </label>
+                        <select
+                          className="input-enhanced audience-select"
+                          value={audienceGroup}
+                          onChange={(e) => handleAudienceGroupChange(e.target.value)}
+                          disabled={isLoadingAudience}
+                        >
+                          <option value="">— Choose a group —</option>
+                          {availableAudienceGroups.map((group) => (
+                            <option key={group.key} value={group.key}>{group.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {isLoadingAudience && (
+                        <div className="audience-loading">
+                          <i className="fas fa-spinner fa-spin"></i>
+                          <span>Loading audience data...</span>
+                        </div>
+                      )}
+
+                      {emails && !isLoadingAudience && (
+                        <>
+                          <div className="csv-stats">
+                            <div className="stat success">
+                              <i className="fas fa-check-circle"></i>
+                              <span className="stat-text">
+                                {emails.total_valid} Valid Contacts
+                              </span>
+                            </div>
+                            {emails.total_invalid > 0 && (
+                              <div className="stat error">
+                                <i className="fas fa-times-circle"></i>
+                                <span className="stat-text">
+                                  {emails.total_invalid} Invalid
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="email-list-preview">
+                            <h5 className="preview-title">👥 Recipients Preview (First 5):</h5>
+                            <ul className="email-list">
+                              {emails.email_name_pairs && emails.email_name_pairs.slice(0, 5).map((item, idx) => (
+                                <li key={idx} className="email-item">
+                                  <i className="fas fa-envelope"></i>
+                                  <div className="email-details">
+                                    <span className="email-text">{item.email}</span>
+                                    <span className="email-name">👤 {item.name}</span>
+                                  </div>
+                                </li>
+                              ))}
+                              {emails.total_valid > 5 && (
+                                <li className="more-items">
+                                  +{emails.total_valid - 5} more recipients...
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+
+                          <div className="csv-schedule-section">
+                            <div className="form-group-enhanced">
+                              <label className="label-enhanced">
+                                <i className="fas fa-clock"></i>
+                                <span>Schedule Time (Optional)</span>
+                              </label>
+                              <input
+                                type="datetime-local"
+                                className="input-enhanced"
+                                value={scheduledDateTime}
+                                onChange={(e) => setScheduledDateTime(e.target.value)}
+                              />
+                              {scheduledDateTime && (
+                                <small className="time-info">
+                                  ⏰ Scheduled for: {new Date(scheduledDateTime).toLocaleString()}
+                                </small>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              className="send-btn-enhanced"
+                              onClick={handleSendCSV}
+                              disabled={isSending || !cacheId}
+                            >
+                              {isSending ? (
+                                <>
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                  <span>Sending...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fas fa-paper-plane"></i>
+                                  <span>
+                                    {scheduledDateTime
+                                      ? `Schedule to ${emails.total_valid} Recipients`
+                                      : `Send to ${emails.total_valid} Recipients`}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {/* Multiple Emails (CSV) Mode */}
                   {sendMode === 'csv' && (
                     <div className="send-section csv-section">
                       <h4 className="csv-section-title">📊 Bulk Email Campaign</h4>
                       <p className="csv-section-info">Upload a CSV file with Email and Name columns for personalized sending</p>
-                      
+
                       <div className="csv-upload-area">
                         <input
                           type="file"
@@ -500,11 +751,11 @@ function MailAutomation() {
                           <i className="fas fa-cloud-upload"></i>
                           {csvFile ? csvFile.name : 'Choose CSV File'}
                         </label>
-                        
+
                         {csvFile && (
-                          <button 
-                            type="button" 
-                            className="upload-csv-btn" 
+                          <button
+                            type="button"
+                            className="upload-csv-btn"
                             onClick={handleUploadCSV}
                           >
                             <i className="fas fa-upload"></i> Upload & Extract
@@ -576,11 +827,11 @@ function MailAutomation() {
                               )}
                             </div>
 
-                            <button 
-                              type="button" 
-                              className="send-btn-enhanced" 
+                            <button
+                              type="button"
+                              className="send-btn-enhanced"
                               onClick={handleSendCSV}
-                              disabled={isSending}
+                              disabled={isSending || !cacheId}
                             >
                               {isSending ? (
                                 <>
@@ -591,8 +842,8 @@ function MailAutomation() {
                                 <>
                                   <i className="fas fa-paper-plane"></i>
                                   <span>
-                                    {scheduledDateTime 
-                                      ? `Schedule to ${emails.total_valid} Recipients` 
+                                    {scheduledDateTime
+                                      ? `Schedule to ${emails.total_valid} Recipients`
                                       : `Send to ${emails.total_valid} Recipients`}
                                   </span>
                                 </>
@@ -618,22 +869,74 @@ function MailAutomation() {
                   <p>See how your email looks</p>
                 </div>
               </div>
-              
-              <div className="email-preview-container">
-                {showPreview && previewHtml ? (
-                  <div 
-                    className="email-preview-content"
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
-                  />
-                ) : (
-                  <div className="preview-placeholder-enhanced">
-                    <div className="placeholder-icon">
-                      <i className="fas fa-envelope-open-text"></i>
-                    </div>
-                    <h3>Email Preview</h3>
-                    <p>Your AI-generated email will appear here</p>
+
+              <div className="email-client-frame">
+                <div className="email-window-header">
+                  <div className="window-dots">
+                    <span className="dot red"></span>
+                    <span className="dot yellow"></span>
+                    <span className="dot green"></span>
                   </div>
-                )}
+                  <div className="window-title">AI Email Preview</div>
+                  <div className="header-actions-preview" style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+                    <button className="preview-action-btn" title="Copy Content" onClick={() => {
+                      navigator.clipboard.writeText(generatedEmail);
+                      showNotification('📋 Email copied to clipboard!', 'success');
+                    }}>
+                      <i className="fas fa-copy"></i>
+                    </button>
+                    <button className="preview-action-btn" title="Edit Content" onClick={() => {
+                      showNotification('✏️ Edit mode enabled (Simulated)', 'info');
+                    }}>
+                      <i className="fas fa-edit"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="email-metadata-bar">
+                  <div className="metadata-item">
+                    <span className="label">From:</span>
+                    <span className="value">{senderName || 'Agentify Team'}</span>
+                  </div>
+                  <div className="metadata-item">
+                    <span className="label">To:</span>
+                    <span className="value">{receiverName || (sendMode === 'csv' ? 'CSV Recipients' : sendMode === 'audience' ? audienceGroup ? availableAudienceGroups.find(g => g.key === audienceGroup)?.label : 'Audience Group' : 'Recipient Name')}</span>
+                  </div>
+                  <div className="metadata-item">
+                    <span className="label">Subject:</span>
+                    <span className="value">{subject || 'No Subject'}</span>
+                  </div>
+                </div>
+
+                <div className="email-preview-container">
+                  {showPreview && previewHtml ? (
+                    <div className="email-preview-scroll-area">
+                      <div
+                        className="email-preview-content"
+                        dangerouslySetInnerHTML={{ __html: previewHtml }}
+                      />
+                      <div className="email-preview-footer">
+                        <div className="ai-signature-line">
+                          <i className="fas fa-sparkles"></i>
+                          <span>Powered by Agentify AI</span>
+                        </div>
+                        <div className="ai-tagline">Professional Email Automation</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="preview-placeholder-enhanced">
+                      <div className="placeholder-icon">
+                        <i className="fas fa-envelope-open-text"></i>
+                      </div>
+                      <h3>Ready to Generate?</h3>
+                      <p>Your AI-tailored professional email will appear here within this preview frame once generated.</p>
+                      <div className="placeholder-features">
+                        <span><i className="fas fa-check"></i> Standard Formatting</span>
+                        <span><i className="fas fa-check"></i> Personalized Tags</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Send Result - Campaign Status */}
@@ -724,7 +1027,7 @@ function MailAutomation() {
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="timeline-item pending">
                           <div className="timeline-marker">
                             <i className="fas fa-hourglass-half"></i>
@@ -740,14 +1043,14 @@ function MailAutomation() {
 
                       {/* Action Buttons */}
                       <div className="campaign-actions">
-                        <button 
+                        <button
                           className="action-btn primary-btn"
                           onClick={resetForm}
                         >
                           <i className="fas fa-plus"></i>
                           Create New Campaign
                         </button>
-                        <button 
+                        <button
                           className="action-btn secondary-btn"
                           onClick={() => setSendResult(null)}
                         >
@@ -775,14 +1078,14 @@ function MailAutomation() {
                           <div className="stat-number sent">{sendResult.sent || 0}</div>
                           <div className="stat-label">Sent Successfully</div>
                         </div>
-                        
+
                         {sendResult.failed > 0 && (
                           <div className="stat-card failed-stat">
                             <div className="stat-number failed">{sendResult.failed}</div>
                             <div className="stat-label">Failed</div>
                           </div>
                         )}
-                        
+
                         <div className="stat-card total-stat">
                           <div className="stat-number total">{sendResult.total || 0}</div>
                           <div className="stat-label">Total Recipients</div>
@@ -790,7 +1093,7 @@ function MailAutomation() {
                       </div>
 
                       {/* Action Button */}
-                      <button 
+                      <button
                         className="action-btn primary-btn"
                         onClick={resetForm}
                       >
@@ -828,8 +1131,8 @@ function MailAutomation() {
       )}
 
       <Footer />
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={() => setIsLoggedIn(true)}
       />

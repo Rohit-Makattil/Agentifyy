@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal';
+import { useOutletContext, Link } from 'react-router-dom';
 import axios from 'axios';
 
-function WebsiteBuilder() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+function WebsiteBuilder({ initialData }) {
+  const context = useOutletContext();
+  const { isLoggedIn, setIsLoginModalOpen } = context || {};
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [websiteDescription, setWebsiteDescription] = useState('');
   const [theme, setTheme] = useState('Sci-Fi Dark');
@@ -24,12 +21,10 @@ function WebsiteBuilder() {
   const fullscreenIframeRef = useRef(null);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-    if (!loggedIn) {
+    if (!isLoggedIn && setIsLoginModalOpen) {
       setIsLoginModalOpen(true);
     }
-  }, []);
+  }, [isLoggedIn, setIsLoginModalOpen]);
 
   // Handle iframe load to intercept navigation
   const handleIframeLoad = (iframeRef) => {
@@ -120,7 +115,10 @@ function WebsiteBuilder() {
     try {
       const response = await axios.post('http://localhost:5000/generate',
         { prompt },
-        { signal: abortControllerRef.current.signal }
+        {
+          signal: abortControllerRef.current.signal,
+          timeout: 120000 // 120s timeout to match backend
+        }
       );
       const files = response.data.files;
 
@@ -270,28 +268,48 @@ function WebsiteBuilder() {
 
   return (
     <>
-      <Navbar onLoginClick={() => setIsLoginModalOpen(true)} />
 
-      <section className={`agent-hero website-builder-hero ${!isLoggedIn ? 'blur' : ''}`}>
-        <div className="floating-shapes">
-          <div className="floating-shape"></div>
-          <div className="floating-shape"></div>
-          <div className="floating-shape"></div>
-        </div>
-
-        <div className="hero-content">
-          <div className="hero-badge-animated">
-            <span className="badge-glow"></span>
-            <i className="fas fa-globe"></i>
-            <span>AI-Powered Web Creation</span>
+      <section className={`modern-hero web-hero ${!isLoggedIn ? 'blur' : ''}`}>
+        <div className="hero-grid">
+          <div className="hero-left">
+            <div className="hero-tag">
+              <i className="fas fa-globe"></i>
+              <span>Website Builder</span>
+            </div>
+            <h1 className="hero-heading">
+              Build Stunning
+              <span className="gradient-text"> Websites Instantly</span>
+            </h1>
+            <p className="hero-description">
+              AI-powered web creation. Just describe your vision and watch it transform into a fully responsive website in seconds.
+            </p>
+            <div className="hero-stats">
+              <div className="stat-item">
+                <div className="stat-number">60s</div>
+                <div className="stat-label">Build Time</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">100%</div>
+                <div className="stat-label">Responsive</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">0</div>
+                <div className="stat-label">Coding</div>
+              </div>
+            </div>
           </div>
-          <h1 className="hero-title-enhanced">
-            <span className="gradient-text-animated">Website Builder</span>
-          </h1>
-          <p className="hero-subtitle-enhanced">
-            Generate stunning, responsive websites with AI-driven design.<br />
-            No coding required—just describe your vision and watch it come to life.
-          </p>
+          <div className="hero-right">
+            <div className="hero-visual">
+              <div className="visual-icon">
+                <i className="fas fa-code"></i>
+              </div>
+              <div className="visual-rings">
+                <div className="ring ring-1"></div>
+                <div className="ring ring-2"></div>
+                <div className="ring ring-3"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -513,65 +531,14 @@ function WebsiteBuilder() {
               </div>
             </div>
           </div>
-
-          <Link to="/" className="back-btn-enhanced">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Home</span>
-          </Link>
         </div>
       </section>
 
-      {/* Fullscreen Preview Modal */}
-      {isFullscreen && (
-        <div className="fullscreen-modal">
-          <div className="fullscreen-header" style={{ zIndex: 9999 }}>
-            <div className="fullscreen-title">
-              <i className="fas fa-desktop"></i>
-              <span>Fullscreen Preview</span>
-            </div>
-            <button
-              className="fullscreen-close"
-              onClick={toggleFullscreen}
-              style={{ position: 'relative', zIndex: 10000 }}
-            >
-              <i className="fas fa-times"></i>
-              <span>Exit Fullscreen</span>
-            </button>
-          </div>
-          <div className="fullscreen-content">
-            <iframe
-              ref={fullscreenIframeRef}
-              className="fullscreen-iframe"
-              title="Fullscreen Website Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-              onLoad={() => handleIframeLoad(fullscreenIframeRef)}
-            />
-          </div>
-        </div>
-      )}
-
-      {!isLoggedIn && (
-        <div className="login-overlay" style={{ display: 'flex' }}>
-          <div className="login-overlay-content">
-            <div className="lock-icon-wrapper">
-              <i className="fas fa-lock"></i>
-            </div>
-            <h3>Authentication Required</h3>
-            <p>Please log in to access Website Builder</p>
-            <button className="login-overlay-btn" onClick={() => setIsLoginModalOpen(true)}>
-              <i className="fas fa-sign-in-alt"></i>
-              <span>Log In to Continue</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      <Footer />
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={() => setIsLoggedIn(true)}
-      />
+      <div className="back-nav" style={{ marginTop: '40px' }}>
+        <Link to="/" className="back-link">
+          <i className="fas fa-arrow-left"></i> Back to Home
+        </Link>
+      </div>
     </>
   );
 }

@@ -1,27 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
-function Navbar({ onLoginClick }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+function Navbar({ onLoginClick, isLoggedIn }) {
   const location = useLocation();
-
-  useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-
-    // Listen for storage changes to update navbar in real-time
-    const handleStorageChange = () => {
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      setIsLoggedIn(loggedIn);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
-    setIsLoggedIn(false);
     window.location.href = '/';
   };
 
@@ -56,6 +40,11 @@ function Navbar({ onLoginClick }) {
                   <i className="fas fa-pen"></i> Post Creator
                 </Link>
               </li>
+              <li>
+                <Link to="/agentify" className={`agentify-link ${isActive('/agentify')}`} style={{ color: '#a855f7', fontWeight: 'bold' }}>
+                  <i className="fas fa-bolt"></i> Agentify
+                </Link>
+              </li>
             </>
           )}
         </ul>
@@ -77,8 +66,5 @@ function Navbar({ onLoginClick }) {
   );
 }
 
-<Link to="/email-campaign" className="nav-link">
-  <i className="fas fa-envelope"></i> Email Campaign
-</Link>
 
 export default Navbar;

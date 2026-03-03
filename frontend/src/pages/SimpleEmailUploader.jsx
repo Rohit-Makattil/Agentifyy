@@ -34,9 +34,9 @@ function SimpleEmailUploader() {
 
     try {
       setUploadProgress(50);
-      
+
       const response = await axios.post(
-        'http://localhost:5000/upload-email-csv', 
+        'http://localhost:5000/upload-email-csv',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -77,7 +77,7 @@ function SimpleEmailUploader() {
       formData.append('body', body);
 
       const response = await axios.post(
-        'http://localhost:5000/send-simple-bulk-email', 
+        'http://localhost:5000/send-simple-bulk-email',
         formData
       );
 
@@ -96,9 +96,9 @@ function SimpleEmailUploader() {
   };
 
   return (
-    <div className="simple-email-uploader">
+    <div className="simple-email-uploader pt-20">
       <div className="container">
-        
+
         <div className="header">
           <h1>📧 Bulk Email Campaign</h1>
           <p>Upload CSV with emails and send campaigns</p>
@@ -106,7 +106,7 @@ function SimpleEmailUploader() {
 
         <div className="card upload-card">
           <h2>Step 1: Upload Email List</h2>
-          
+
           <div className="file-upload-box">
             <input
               type="file"
@@ -119,7 +119,7 @@ function SimpleEmailUploader() {
               <i className="fas fa-cloud-upload"></i>
               {file ? file.name : 'Choose CSV File'}
             </label>
-            
+
             {file && (
               <button className="btn-primary" onClick={handleUpload}>
                 <i className="fas fa-upload"></i> Upload & Extract
@@ -206,8 +206,8 @@ function SimpleEmailUploader() {
             </div>
 
             <div className="action-buttons">
-              <button 
-                className="btn-success" 
+              <button
+                className="btn-success"
                 onClick={handleSend}
                 disabled={sending || !subject || !body}
               >
@@ -217,7 +217,7 @@ function SimpleEmailUploader() {
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-paper-plane"></i> 
+                    <i className="fas fa-paper-plane"></i>
                     Send to {emails.total_valid} Recipients
                   </>
                 )}
@@ -229,7 +229,7 @@ function SimpleEmailUploader() {
         {result && (
           <div className="card result-card">
             <h2>✅ Campaign Complete</h2>
-            
+
             <div className="result-stats">
               <div className="result-item success">
                 <i className="fas fa-check"></i>
@@ -258,7 +258,7 @@ function SimpleEmailUploader() {
               </div>
             </div>
 
-            <button 
+            <button
               className="btn-secondary"
               onClick={() => {
                 setResult(null);

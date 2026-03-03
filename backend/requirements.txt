@@ -12,3 +12,11 @@ google-api-python-client==2.109.0
 email-validator==2.0.0
 pandas==2.1.3
 python-multipart==0.0.6
+streamlit
+pillow
+huggingface_hub
+tweepy
+playwright
+instagrapi
+gradio_client
+beautifulsoup4

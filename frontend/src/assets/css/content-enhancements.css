@@ -1,0 +1,405 @@
+/* Enhanced Content Sections - Dark Modern Theme */
+
+/* Override default agent page backgrounds */
+.agent-page,
+.mail-automation-page,
+.website-builder-page,
+.quantum-postmaster {
+    background: rgba(38, 40, 40, 1);
+    min-height: 100vh;
+    padding: 4rem 0;
+    width: 100%;
+}
+
+/* Container improvements - Full width */
+.mail-container,
+.builder-container,
+.agent-config-grid {
+    max-width: 100%;
+    width: 100%;
+    padding: 0 3rem;
+    margin: 0 auto;
+}
+
+/* Section Headers */
+.section-header-builder {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fade-in-up 0.6s ease-out;
+}
+
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-badge-builder {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 50px;
+    color: #a5b4fc;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.section-badge-builder i {
+    color: #6366f1;
+}
+
+.section-title-builder {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.8rem;
+}
+
+.section-subtitle-builder {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Enhanced Panels & Cards */
+.config-panel,
+.agent-form-container,
+.preview-panel {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.config-panel:hover,
+.agent-form-container:hover {
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Panel Headers */
+.panel-header-enhanced {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.header-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.header-icon-wrapper i {
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-text h3 {
+    font-size: 1.3rem;
+    color: #f1f5f9;
+    margin-bottom: 0.3rem;
+}
+
+.header-text p {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* Form Groups */
+.form-group-enhanced,
+.input-group {
+    margin-bottom: 1.8rem;
+}
+
+.label-enhanced,
+.input-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.3px;
+}
+
+.label-enhanced i {
+    color: #6366f1;
+    font-size: 1rem;
+}
+
+/* Enhanced Inputs */
+.input-enhanced,
+.holo-input,
+.textarea-enhanced,
+.holo-textarea,
+input[type="text"],
+input[type="email"],
+textarea {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1.5px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    color: #f1f5f9;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.input-enhanced:focus,
+.holo-input:focus,
+.textarea-enhanced:focus,
+.holo-textarea:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1),
+        0 10px 30px rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+}
+
+.input-enhanced::placeholder,
+.holo-input::placeholder,
+.textarea-enhanced::placeholder,
+.holo-textarea::placeholder {
+    color: #64748b;
+}
+
+textarea,
+.textarea-enhanced,
+.holo-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Enhanced Buttons */
+.btn-generate,
+.holo-btn,
+.generate-btn,
+button[type="submit"] {
+    width: 100%;
+    padding: 1.2rem 2rem;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-generate::before,
+.holo-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-generate:hover::before,
+.holo-btn:hover::before {
+    left: 100%;
+}
+
+.btn-generate:hover,
+.holo-btn:hover,
+.generate-btn:hover,
+button[type="submit"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+}
+
+.btn-generate:active,
+.holo-btn:active {
+    transform: translateY(-1px);
+}
+
+.btn-generate:disabled,
+.holo-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Theme Selector Enhancement */
+.theme-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 0.8rem;
+}
+
+.theme-option {
+    position: relative;
+    padding: 1.5rem 1rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.theme-option:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+}
+
+.theme-option.active {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+}
+
+.theme-option.active::after {
+    content: '✓';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 24px;
+    height: 24px;
+    background: #6366f1;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.theme-option i {
+    font-size: 2rem;
+    margin-bottom: 0.8rem;
+    display: block;
+}
+
+.theme-option span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+/* Grid Layouts */
+.builder-grid,
+.agent-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+/* Preview Panel Specific */
+.preview-panel h3,
+.holo-title {
+    font-size: 1.3rem;
+    color: #f1f5f9;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.preview-content {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    min-height: 300px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spinner-rotate 0.6s linear infinite;
+}
+
+@keyframes spinner-rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+
+    .builder-grid,
+    .agent-config-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-title-builder {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .agent-page,
+    .mail-automation-page,
+    .website-builder-page,
+    .quantum-postmaster {
+        padding: 2rem 1rem;
+    }
+
+    .config-panel,
+    .agent-form-container,
+    .preview-panel {
+        padding: 1.5rem;
+    }
+
+    .section-title-builder {
+        font-size: 1.8rem;
+    }
+}

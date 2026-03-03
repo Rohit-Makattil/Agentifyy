@@ -14,6 +14,26 @@ logger = logging.getLogger(__name__)
 # Store scheduled emails
 scheduled_emails = []
 
+def wrap_in_html(content: str) -> str:
+    """
+    Wraps text content in basic HTML structure if it doesn't already contain <html>.
+    Converts newlines to <br> for proper rendering in email clients.
+    """
+    if "<html" in content.lower():
+        return content
+    
+    # Convert newlines to breaks/paragraphs
+    formatted = content.replace("\n\n", "</p><p style='margin: 1.2em 0;'>")
+    formatted = formatted.replace("\n", "<br>")
+    
+    return f"""
+    <html>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <p style="margin: 0;">{formatted}</p>
+      </body>
+    </html>
+    """
+
 def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = "Agentify Team") -> dict:
     """
     Send email immediately to multiple recipients
@@ -38,13 +58,23 @@ def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = 
         
         for to_email in to_emails:
             try:
-                # Create message
-                msg = MIMEMultipart()
+                # Create message with alternative parts for better compatibility
+                msg = MIMEMultipart('alternative')
                 msg['From'] = f"{sender_name} <{sender_email}>"
                 msg['To'] = to_email
                 msg['Subject'] = subject
                 
-                msg.attach(MIMEText(body, 'plain'))
+                # Create the plain-text and HTML versions of your message
+                text_content = body.replace("<br>", "\n").replace("</div>", "\n").replace("</p>", "\n") # Basic fallback
+                html_body = wrap_in_html(body)
+                
+                part1 = MIMEText(text_content, 'plain')
+                part2 = MIMEText(html_body, 'html')
+                
+                # Add HTML/plain-text parts to MIMEMultipart message
+                # The email client will try to render the last part first
+                msg.attach(part1)
+                msg.attach(part2)
                 
                 # Connect to Gmail SMTP
                 server = smtplib.SMTP('smtp.gmail.com', 587)

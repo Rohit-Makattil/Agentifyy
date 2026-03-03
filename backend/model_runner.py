@@ -15,13 +15,12 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 def prompt_with_instruction(user_prompt: str) -> str:
     return (
         "You are an expert frontend web developer. "
-        "Generate production-ready HTML, CSS, and JavaScript code for a website "
-        "based strictly on the user's description. "
-        "Ensure clean formatting and separate sections for each file. "
-        "Output format example:\n"
-        "```index.html\n<!-- HTML code -->\n```\n"
-        "```style.css\n/* CSS code */\n```\n"
-        "```script.js\n// JS code\n```\n\n"
+        "Generate clean, production-ready HTML, CSS, and JavaScript for a website. "
+        "IMPORTANT: The design MUST reflect the theme specified (colors, fonts, style). "
+        "Keep code concise but complete. Separate each file clearly:\n"
+        "```index.html\n<!-- HTML -->\n```\n"
+        "```style.css\n/* CSS */\n```\n"
+        "```script.js\n// JS\n```\n\n"
         f"User prompt: {user_prompt}"
     )
 
@@ -46,25 +45,64 @@ def call_openai(prompt: str) -> str:
 import google.generativeai as genai
 
 def get_latest_gemini_flash():
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    models = [m.name for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
-    flash_models = [m for m in models if "flash" in m]
-    # Pick the latest or stable version
-    for m in ["models/gemini-1.5-flash", "models/gemini-flash-latest"]:  # Updated to valid models (assuming typo in original)
-        if m in flash_models:
-            return m
-    return flash_models[0] if flash_models else "models/gemini-1.5-flash"
+    # genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    # models = [m.name for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
+    # flash_models = [m for m in models if "flash" in m]
+    # # Pick the latest or stable version
+    # for m in ["models/gemini-2.5-flash", "models/gemini-2.0-flash-lite"]:
+    #     if m in flash_models:
+    #         return m
+    return "gemini-2.5-flash"
+
+def _stream_gemini(model, prompt: str) -> str:
+    """Streams a Gemini model response and returns the full text."""
+    response = model.generate_content(prompt, stream=True)
+    full_text = ""
+    for chunk in response:
+        if chunk.text:
+            full_text += chunk.text
+    return full_text
 
 def call_gemini(prompt: str) -> str:
     import google.generativeai as genai
+    import concurrent.futures
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in environment.")
     genai.configure(api_key=api_key)
-    model_name = get_latest_gemini_flash()
-    model = genai.GenerativeModel(model_name)
-    response = model.generate_content(prompt)
-    return response.text
+
+    # Try working models in order of preference
+    models_to_try = [
+        "models/gemini-2.5-flash",      # Working - primary
+        "models/gemini-2.0-flash",      # Fallback
+    ]
+
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            print(f"Trying model: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            # Use a thread with 120s timeout to prevent 504 Deadline Exceeded hanging forever
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_stream_gemini, model, prompt)
+                result = future.result(timeout=120)
+            print(f"✅ Success with model: {model_name}")
+            return result
+        except concurrent.futures.TimeoutError:
+            last_error = f"{model_name} timed out after 120s"
+            print(f"⚠️ {last_error}, trying next model...")
+            continue
+        except Exception as e:
+            err_str = str(e)
+            # Only fall through to next model on timeout/deadline errors
+            if "504" in err_str or "deadline" in err_str.lower() or "timed out" in err_str.lower():
+                last_error = err_str
+                print(f"⚠️ {model_name} deadline error, trying next model...")
+                continue
+            raise  # Re-raise all other errors (quota, auth, etc.)
+
+    raise RuntimeError(f"All Gemini models failed. Last error: {last_error}")
 
 
 # -------------------------------------------------------------
@@ -109,7 +147,11 @@ def parse_files_from_model_text(output_text: str) -> dict:
         files["style.css"] = css_match.group(1).strip()
     if js_match:
         files["script.js"] = js_match.group(1).strip()
-
+    
+    # Fallback: if no code blocks found, check if raw text looks like HTML
+    if not files and ("<html" in output_text.lower() or "<!doctype html" in output_text.lower()):
+        files["index.html"] = output_text.strip()
+            
     return files
 
 
