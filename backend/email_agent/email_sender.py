@@ -7,6 +7,8 @@ import logging
 from datetime import datetime
 import threading
 import time
+import urllib.parse
+import re
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -34,7 +36,33 @@ def wrap_in_html(content: str) -> str:
     </html>
     """
 
-def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = "Agentify Team") -> dict:
+def append_buttons_to_html(html_content: str, subject: str, to_email: str) -> str:
+    """
+    Appends 'Yes, I'm Interested' and 'Not Interested' buttons to the HTML content.
+    These buttons link to the tracking endpoint on the backend.
+    """
+    base_url = os.getenv("TRACKING_BASE_URL", "http://localhost:5000")
+    
+    encoded_subject = urllib.parse.quote(subject)
+    encoded_email = urllib.parse.quote(to_email)
+    
+    yes_url = f"{base_url}/track-response?email={encoded_email}&subject={encoded_subject}&response=Yes"
+    no_url = f"{base_url}/track-response?email={encoded_email}&subject={encoded_subject}&response=No"
+    
+    buttons_html = f"""
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <p style="margin-bottom: 15px; font-weight: bold; color: #333;">Please let us know your interest:</p>
+        <a href="{yes_url}" style="display: inline-block; padding: 10px 24px; background-color: #10b981; color: #ffffff; text-decoration: none; border-radius: 6px; margin-right: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">Yes, I'm Interested</a>
+        <a href="{no_url}" style="display: inline-block; padding: 10px 24px; background-color: #ef4444; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">Not Interested</a>
+    </div>
+    """
+    
+    if "</body>" in html_content.lower():
+        return re.sub(r'</body>', f'{buttons_html}\n</body>', html_content, flags=re.IGNORECASE)
+    else:
+        return html_content + buttons_html
+
+def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = "Agentify Team", include_response_buttons: bool = False) -> dict:
     """
     Send email immediately to multiple recipients
     
@@ -67,6 +95,10 @@ def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = 
                 # Create the plain-text and HTML versions of your message
                 text_content = body.replace("<br>", "\n").replace("</div>", "\n").replace("</p>", "\n") # Basic fallback
                 html_body = wrap_in_html(body)
+                
+                if include_response_buttons:
+                    html_body = append_buttons_to_html(html_body, subject, to_email)
+                    text_content += f"\n\nPlease let us know your interest by clicking the buttons in the HTML version of this email or replying with 'Yes, I'm Interested' or 'Not Interested'."
                 
                 part1 = MIMEText(text_content, 'plain')
                 part2 = MIMEText(html_body, 'html')
@@ -112,7 +144,7 @@ def send_email_now(to_emails: list, subject: str, body: str, sender_name: str = 
             "failed": len(to_emails)
         }
 
-def schedule_email(to_emails: list, subject: str, body: str, scheduled_time: datetime, sender_name: str = "Agentify Team") -> dict:
+def schedule_email(to_emails: list, subject: str, body: str, scheduled_time: datetime, sender_name: str = "Agentify Team", include_response_buttons: bool = False) -> dict:
     """
     Schedule email to be sent at a specific time
     
@@ -136,7 +168,8 @@ def schedule_email(to_emails: list, subject: str, body: str, scheduled_time: dat
             "body": body,
             "sender_name": sender_name,
             "scheduled_time": scheduled_time,
-            "status": "scheduled"
+            "status": "scheduled",
+            "include_response_buttons": include_response_buttons
         }
         
         scheduled_emails.append(scheduled_data)
@@ -183,7 +216,8 @@ def _send_scheduled_email(email_data: dict):
             email_data['to_emails'],
             email_data['subject'],
             email_data['body'],
-            email_data['sender_name']
+            email_data['sender_name'],
+            email_data.get('include_response_buttons', False)
         )
         
         # Update status

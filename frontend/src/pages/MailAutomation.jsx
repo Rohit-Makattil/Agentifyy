@@ -1106,36 +1106,14 @@ function MailAutomation({ initialData }) {
               )}
             </div>
           </div>
-
-          <Link to="/" className="back-btn-enhanced">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Home</span>
-          </Link>
         </div>
       </section>
 
-      {!isLoggedIn && (
-        <div className="login-overlay" style={{ display: 'flex' }}>
-          <div className="login-overlay-content">
-            <div className="lock-icon-wrapper">
-              <i className="fas fa-lock"></i>
-            </div>
-            <h3>Authentication Required</h3>
-            <p>Please log in to access Mail Automation</p>
-            <button className="login-overlay-btn" onClick={() => setIsLoginModalOpen(true)}>
-              <i className="fas fa-sign-in-alt"></i>
-              <span>Log In to Continue</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      <Footer />
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={() => setIsLoggedIn(true)}
-      />
+      <div className="back-nav" style={{ marginTop: '40px' }}>
+        <Link to="/" className="back-link">
+          <i className="fas fa-arrow-left"></i> Back to Home
+        </Link>
+      </div>
     </>
   );
 }

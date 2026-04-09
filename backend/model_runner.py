@@ -12,11 +12,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # -------------------------------------------------------------
 # ✅ Helper to wrap the user's prompt with clear instructions
 # -------------------------------------------------------------
-def prompt_with_instruction(user_prompt: str) -> str:
+def prompt_with_instruction(user_prompt: str, theme: str = "") -> str:
+    theme_instruction = f"\nCRITICAL DESIGN THEME: You MUST heavily style the CSS to match a '{theme}' aesthetic. Use explicit color palettes, background gradients, and modern box-shadows that fit this exact theme." if theme else ""
     return (
-        "You are an expert frontend web developer. "
-        "Generate clean, production-ready HTML, CSS, and JavaScript for a website. "
-        "IMPORTANT: The design MUST reflect the theme specified (colors, fonts, style). "
+        "You are an expert frontend web developer and UI/UX designer. "
+        "Generate clean, highly aesthetic, production-ready HTML, CSS, and JavaScript for a website. "
+        f"{theme_instruction}\n"
+        "IMPORTANT: The design MUST reflect the theme specified (colors, fonts, style). DO NOT USE GENERIC WHITE BACKGROUNDS UNLESS SPECIFIED. "
         "Keep code concise but complete. Separate each file clearly:\n"
         "```index.html\n<!-- HTML -->\n```\n"
         "```style.css\n/* CSS */\n```\n"
@@ -116,8 +118,8 @@ def call_local_model(prompt: str) -> str:
 # -------------------------------------------------------------
 # ✅ Main Function to Generate Website Code
 # -------------------------------------------------------------
-def generate_code_from_prompt(user_prompt: str) -> dict:
-    full_prompt = prompt_with_instruction(user_prompt)
+def generate_code_from_prompt(user_prompt: str, theme: str = "") -> dict:
+    full_prompt = prompt_with_instruction(user_prompt, theme)
 
     if MODEL_TYPE == "openai":
         response_text = call_openai(full_prompt)

@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useOutletContext, Link } from 'react-router-dom';
 import axios from 'axios';
 import './SimpleEmailUploader.css';
 
 function SimpleEmailUploader() {
+  const context = useOutletContext();
+  const { isLoggedIn, setIsLoginModalOpen } = context || {};
   const [file, setFile] = useState(null);
   const [emailId, setEmailId] = useState(null);
   const [emails, setEmails] = useState(null);
@@ -96,7 +99,7 @@ function SimpleEmailUploader() {
   };
 
   return (
-    <div className="simple-email-uploader pt-20">
+    <div className={`simple-email-uploader pt-20 ${!isLoggedIn ? 'blur' : ''}`}>
       <div className="container">
 
         <div className="header">
@@ -273,6 +276,11 @@ function SimpleEmailUploader() {
           </div>
         )}
 
+        <div className="back-nav" style={{ marginTop: '40px', paddingBottom: '40px' }}>
+          <Link to="/" className="back-link">
+            <i className="fas fa-arrow-left"></i> Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );

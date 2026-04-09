@@ -3770,6 +3770,36 @@ a:hover {
   font-weight: var(--font-weight-medium);
 }
 
+.preview-container {
+  width: 100%;
+  height: 500px;
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+  border-radius: var(--radius-lg);
+}
+
+/* When fullscreen */
+.preview-iframe.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  border-radius: 0;
+}
+
 .code-panel-enhanced {
   background: var(--color-surface);
   border: var(--space-1) solid var(--color-card-border);

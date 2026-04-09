@@ -114,7 +114,7 @@ function WebsiteBuilder({ initialData }) {
 
     try {
       const response = await axios.post('http://localhost:5000/generate',
-        { prompt },
+        { prompt, theme },
         {
           signal: abortControllerRef.current.signal,
           timeout: 120000 // 120s timeout to match backend
@@ -533,6 +533,57 @@ function WebsiteBuilder({ initialData }) {
           </div>
         </div>
       </section>
+
+      {/* Fullscreen Preview Overlay using inline styles to guarantee rendering */}
+      {isFullscreen && preview && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 99999,
+          backgroundColor: '#0f172a',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1rem',
+            backgroundColor: '#0f172a',
+            borderBottom: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <i className="fas fa-desktop" style={{ color: '#c084fc' }}></i>
+              <span style={{ color: 'white', fontWeight: 600 }}>Fullscreen Preview</span>
+            </div>
+            <button
+              onClick={toggleFullscreen}
+              style={{
+                width: '40px', height: '40px',
+                borderRadius: '0.75rem',
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          <div style={{ flex: 1, width: '100%', backgroundColor: 'white', position: 'relative' }}>
+            <iframe
+              ref={fullscreenIframeRef}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Fullscreen Website Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+              onLoad={() => handleIframeLoad(fullscreenIframeRef)}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="back-nav" style={{ marginTop: '40px' }}>
         <Link to="/" className="back-link">
